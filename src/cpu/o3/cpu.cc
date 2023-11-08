@@ -299,6 +299,8 @@ CPU::CPU(const BaseO3CPUParams &params)
         fatal("O3CPU %s has no interrupt controller.\n"
               "Ensure createInterruptController() is called.\n", name());
     }
+
+    ctrace = new ChromeTrace(false);
 }
 
 void

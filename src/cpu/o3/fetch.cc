@@ -688,7 +688,7 @@ Fetch::doSquash(const PCStateBase &new_pc, const DynInstPtr squashInst,
 {
     DPRINTF(Fetch, "[tid:%i] Squashing, setting PC to: %s.\n",
             tid, new_pc);
-
+    std::stringstream ss;
     set(pc[tid], new_pc);
     fetchOffset[tid] = 0;
     if (squashInst && squashInst->pcState().instAddr() == new_pc.instAddr())
@@ -720,8 +720,16 @@ Fetch::doSquash(const PCStateBase &new_pc, const DynInstPtr squashInst,
 
     fetchStatus[tid] = Squashing;
 
+
+    for (auto &inst : fetchQueue[tid]) {
+        ss.str("");
+        ss <<std::hex <<inst->pcState().instAddr();
+        cpu->ctrace->DurationTraceEnd(tid, 0, (inst->staticInst->getName()+
+                                        " 0x"+ss.str()).c_str(), curTick(),0);
+    }
     // Empty fetch queue
     fetchQueue[tid].clear();
+
 
     // microops are being squashed, it is not known wheather the
     // youngest non-squashed microop was  marked delayed commit
@@ -892,6 +900,11 @@ Fetch::tick()
                     tid, inst->seqNum, fetchQueue[tid].size());
 
             wroteToTimeBuffer = true;
+            std::stringstream ss;
+            ss.str("");
+            ss <<std::hex <<inst->pcState().instAddr();
+            cpu->ctrace->DurationTraceEnd(tid, 0, (inst->staticInst->getName()+
+                                        " 0x"+ss.str()).c_str(), curTick(),0);
             fetchQueue[tid].pop_front();
             insts_to_decode++;
             available_insts--;
@@ -1057,6 +1070,13 @@ Fetch::buildInst(ThreadID tid, StaticInstPtr staticInst,
     // that heads to decode.
     assert(numInst < fetchWidth);
     fetchQueue[tid].push_back(instruction);
+
+    std::stringstream ss;
+    ss <<std::hex <<instruction->pcState().instAddr();
+    cpu->ctrace->DurationTraceBegin(tid, 0,
+        (instruction->staticInst->getName()+" 0x"+ss.str()).c_str(),
+        curTick(), 0);
+
     assert(fetchQueue[tid].size() <= fetchQueueSize);
     DPRINTF(Fetch, "[tid:%i] Fetch queue entry created (%i/%i).\n",
             tid, fetchQueue[tid].size(), fetchQueueSize);

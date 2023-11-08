@@ -59,7 +59,7 @@ system.mem_ranges = [AddrRange("512MB")]  # Create an address range
 # Create a simple CPU
 # You can use ISA-specific CPU models for different workloads:
 # `RiscvTimingSimpleCPU`, `ArmTimingSimpleCPU`.
-system.cpu = X86TimingSimpleCPU()
+system.cpu = RiscvO3CPU()
 
 # Create a memory bus, a system crossbar, in this case
 system.membus = SystemXBar()
@@ -68,15 +68,7 @@ system.membus = SystemXBar()
 system.cpu.icache_port = system.membus.cpu_side_ports
 system.cpu.dcache_port = system.membus.cpu_side_ports
 
-# create the interrupt controller for the CPU and connect to the membus
 system.cpu.createInterruptController()
-
-# For X86 only we make sure the interrupts care connect to memory.
-# Note: these are directly connected to the memory bus and are not cached.
-# For other ISA you should remove the following three lines.
-system.cpu.interrupts[0].pio = system.membus.mem_side_ports
-system.cpu.interrupts[0].int_requestor = system.membus.cpu_side_ports
-system.cpu.interrupts[0].int_responder = system.membus.mem_side_ports
 
 # Create a DDR3 memory controller and connect it to the membus
 system.mem_ctrl = MemCtrl()
@@ -94,7 +86,7 @@ thispath = os.path.dirname(os.path.realpath(__file__))
 binary = os.path.join(
     thispath,
     "../../../",
-    "tests/test-progs/hello/bin/x86/linux/hello",
+    "tests/test-progs/hello/bin/riscv/linux/hello",
 )
 
 system.workload = SEWorkload.init_compatible(binary)

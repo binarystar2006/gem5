@@ -1131,6 +1131,12 @@ Commit::commitHead(const DynInstPtr &head_inst, unsigned inst_num)
         // it is executed.
         head_inst->clearCanCommit();
 
+        std::stringstream ss;
+        ss <<std::hex <<head_inst->pcState().instAddr();
+        cpu->ctrace->DurationTraceEnd(head_inst->threadNumber, 4,
+                    (head_inst->staticInst->getName()+" 0x"+ss.str()).c_str(),
+                    curTick(), 0);
+
         if (head_inst->isLoad() && head_inst->strictlyOrdered()) {
             DPRINTF(Commit, "[tid:%i] [sn:%llu] "
                     "Strictly ordered load, PC %s.\n",
@@ -1329,6 +1335,17 @@ Commit::markCompletedInsts()
 
             // Mark the instruction as ready to commit.
             fromIEW->insts[inst_num]->setCanCommit();
+            std::stringstream ss;
+            ss <<std::hex <<fromIEW->insts[inst_num]->pcState().instAddr();
+            cpu->ctrace->DurationTraceEnd(
+                fromIEW->insts[inst_num]->threadNumber, 3,
+                (fromIEW->insts[inst_num]->staticInst->getName()+
+                " 0x"+ss.str()).c_str(), curTick(), 0);
+
+            cpu->ctrace->DurationTraceBegin(
+                fromIEW->insts[inst_num]->threadNumber, 4,
+                (fromIEW->insts[inst_num]->staticInst->getName()+
+                " 0x"+ss.str()).c_str(), curTick(), 0);
         }
     }
 }

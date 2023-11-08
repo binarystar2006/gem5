@@ -650,7 +650,6 @@ Decode::decodeInsts(ThreadID tid)
         assert(!insts_to_decode.empty());
 
         DynInstPtr inst = std::move(insts_to_decode.front());
-
         insts_to_decode.pop();
 
         DPRINTF(Decode, "[tid:%i] Processing instruction [sn:%lli] with "
@@ -685,6 +684,13 @@ Decode::decodeInsts(ThreadID tid)
         ++toRenameIndex;
         ++stats.decodedInsts;
         --insts_available;
+        std::stringstream ss;
+        ss <<std::hex <<inst->pcState().instAddr();
+        cpu->ctrace->DurationTraceEnd(tid, 0, (inst->staticInst->getName()+
+                                    " 0x"+ss.str()).c_str(), curTick(),0);
+
+        cpu->ctrace->DurationTraceBegin(tid, 1, (inst->staticInst->getName()+
+                                        " 0x"+ss.str()).c_str(), curTick(),0);
 
 #if TRACING_ON
         if (debug::O3PipeView) {

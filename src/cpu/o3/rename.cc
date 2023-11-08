@@ -367,6 +367,7 @@ Rename::squash(const InstSeqNum &squash_seq_num, ThreadID tid)
 
     // Set the status to Squashing.
     renameStatus[tid] = Squashing;
+    std::stringstream ss;
 
     // Squash any instructions from decode.
     for (int i=0; i<fromDecode->size; i++) {
@@ -374,6 +375,13 @@ Rename::squash(const InstSeqNum &squash_seq_num, ThreadID tid)
             fromDecode->insts[i]->seqNum > squash_seq_num) {
             fromDecode->insts[i]->setSquashed();
             wroteToTimeBuffer = true;
+            auto inst = fromDecode->insts[i];
+            ss.str("");
+            ss <<std::hex <<inst->pcState().instAddr();
+            cpu->ctrace->DurationTraceEnd(inst->threadNumber, 1,
+                (inst->staticInst->getName()+" 0x"+ss.str()).c_str(),
+                curTick(), 0);
+
         }
 
     }
@@ -381,6 +389,13 @@ Rename::squash(const InstSeqNum &squash_seq_num, ThreadID tid)
     // Clear the instruction list and skid buffer in case they have any
     // insts in them.
     insts[tid].clear();
+    for (auto& inst: insts[tid]) {
+        ss.str("");
+        ss <<std::hex <<inst->pcState().instAddr();
+        cpu->ctrace->DurationTraceEnd(inst->threadNumber, 1,
+            (inst->staticInst->getName()+" 0x"+ss.str()).c_str(),
+            curTick(), 0);
+    }
 
     // Clear the skid buffer in case it has any data in it.
     skidBuffer[tid].clear();
@@ -629,6 +644,12 @@ Rename::renameInsts(ThreadID tid)
             }
         }
 
+        std::stringstream ss;
+        ss <<std::hex <<inst->pcState().instAddr();
+        cpu->ctrace->DurationTraceEnd(inst->threadNumber, 1,
+            (inst->staticInst->getName()+" 0x"+ss.str()).c_str(),
+            curTick(), 0);
+
         insts_to_rename.pop_front();
 
         if (renameStatus[tid] == Unblocking) {
@@ -665,6 +686,7 @@ Rename::renameInsts(ThreadID tid)
                     " lack of free physical registers to rename to.\n");
             blockThisCycle = true;
             insts_to_rename.push_front(inst);
+
             ++stats.fullRegistersEvents;
 
             break;
@@ -727,6 +749,10 @@ Rename::renameInsts(ThreadID tid)
 
         // Put instruction in rename queue.
         toIEW->insts[toIEWIndex] = inst;
+        ss.str("");
+        ss <<std::hex <<inst->pcState().instAddr();
+        cpu->ctrace->DurationTraceEnd(inst->threadNumber, 2,
+            (inst->staticInst->getName()+" 0x"+ss.str()).c_str(), curTick(),0);
         ++(toIEW->size);
 
         // Increment which instruction we're on.
@@ -793,9 +819,19 @@ void
 Rename::sortInsts()
 {
     int insts_from_decode = fromDecode->size;
+    std::stringstream ss;
     for (int i = 0; i < insts_from_decode; ++i) {
         const DynInstPtr &inst = fromDecode->insts[i];
         insts[inst->threadNumber].push_back(inst);
+
+        ss.str("");
+        ss <<std::hex <<inst->pcState().instAddr();
+        cpu->ctrace->DurationTraceEnd(inst->threadNumber, 1,
+            (inst->staticInst->getName()+" 0x"+ss.str()).c_str(),
+            curTick(), 0);
+        cpu->ctrace->DurationTraceBegin(inst->threadNumber, 2,
+            (inst->staticInst->getName()+" 0x"+ss.str()).c_str(),
+            curTick(), 0);
 #if TRACING_ON
         if (debug::O3PipeView) {
             inst->renameTick = curTick() - inst->fetchTick;

@@ -60,7 +60,8 @@ Import('*')
 
 if env['CONF']['USE_EFENCE']:
     env.Append(LIBS=['efence'])
-
+env.Append(LIBS=['cjson'])
+env.Append(CPPPATH=['/home/kelvin/Code/sim/cJSON'])
 # Children need to see the environment
 Export('env')
 

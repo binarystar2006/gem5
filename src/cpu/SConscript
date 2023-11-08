@@ -116,6 +116,8 @@ Source('thread_context.cc')
 Source('thread_state.cc')
 Source('timing_expr.cc')
 
+Source('ctrace.cc')
+
 SimObject('DummyChecker.py', sim_objects=['DummyChecker'])
 Source('checker/cpu.cc')
 DebugFlag('Checker')

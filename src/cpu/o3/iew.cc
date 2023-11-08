@@ -417,6 +417,10 @@ IEW::squashDueToBranch(const DynInstPtr& inst, ThreadID tid)
     DPRINTF(IEW, "[tid:%i] [sn:%llu] Squashing from a specific instruction,"
             " PC: %s "
             "\n", tid, inst->seqNum, inst->pcState() );
+    std::stringstream ss;
+    ss <<std::hex <<inst->pcState().instAddr();
+    cpu->ctrace->DurationTraceEnd(inst->threadNumber, 3,
+            (inst->staticInst->getName()+" 0x"+ss.str()).c_str(), curTick(),0);
 
     if (!toCommit->squash[tid] ||
             inst->seqNum < toCommit->squashedSeqNum[tid]) {
@@ -735,8 +739,14 @@ IEW::sortInsts()
     for (ThreadID tid = 0; tid < numThreads; tid++)
         assert(insts[tid].empty());
 #endif
+    std::stringstream ss;
     for (int i = 0; i < insts_from_rename; ++i) {
         insts[fromRename->insts[i]->threadNumber].push(fromRename->insts[i]);
+        auto inst = fromRename->insts[i];
+        ss.str("");
+        ss <<std::hex <<inst->pcState().instAddr();
+        cpu->ctrace->DurationTraceEnd(inst->threadNumber, 2,
+            (inst->staticInst->getName()+" 0x"+ss.str()).c_str(), curTick(),0);
     }
 }
 
@@ -857,6 +867,10 @@ IEW::dispatchInsts(ThreadID tid)
           ++dis_num_inst)
     {
         inst = insts_to_dispatch.front();
+        std::stringstream ss;
+        ss <<std::hex <<inst->pcState().instAddr();
+        cpu->ctrace->DurationTraceBegin(inst->threadNumber, 3,
+            (inst->staticInst->getName()+" 0x"+ss.str()).c_str(), curTick(),0);
 
         if (dispatchStatus[tid] == Unblocking) {
             DPRINTF(IEW, "[tid:%i] Issue: Examining instruction from skid "
@@ -880,6 +894,11 @@ IEW::dispatchInsts(ThreadID tid)
                     "not adding to IQ.\n", tid);
 
             ++iewStats.dispSquashedInsts;
+            ss.str("");
+            ss <<std::hex <<inst->pcState().instAddr();
+            cpu->ctrace->DurationTraceEnd(inst->threadNumber, 3,
+                (inst->staticInst->getName()+" 0x"+ss.str()).c_str(),
+                curTick(), 0);
 
             insts_to_dispatch.pop();
 
@@ -1137,6 +1156,15 @@ IEW::executeInsts()
             // Consider this instruction executed so that commit can go
             // ahead and retire the instruction.
             inst->setExecuted();
+            std::stringstream ss;
+            ss <<std::hex <<inst->pcState().instAddr();
+            cpu->ctrace->DurationTraceEnd(inst->threadNumber, 3,
+                (inst->staticInst->getName()+" 0x"+ss.str()).c_str(),
+                curTick(), 0);
+
+            cpu->ctrace->DurationTraceBegin(inst->threadNumber, 4,
+                (inst->staticInst->getName()+" 0x"+ss.str()).c_str(),
+                curTick(), 0);
 
             // Not sure if I should set this here or just let commit try to
             // commit any squashed instructions.  I like the latter a bit more.
@@ -1211,6 +1239,16 @@ IEW::executeInsts()
                     inst->setExecuted();
                     instToCommit(inst);
                     activityThisCycle();
+                    std::stringstream ss;
+                    ss <<std::hex <<inst->pcState().instAddr();
+                    cpu->ctrace->DurationTraceEnd(inst->threadNumber, 3,
+                        (inst->staticInst->getName()+" 0x"+ss.str()).c_str(),
+                        curTick(), 0);
+
+                    cpu->ctrace->DurationTraceBegin(inst->threadNumber, 4,
+                        (inst->staticInst->getName()+" 0x"+ss.str()).c_str(),
+                        curTick(), 0);
+
                 }
 
                 // Store conditionals will mark themselves as
@@ -1232,6 +1270,15 @@ IEW::executeInsts()
             }
 
             inst->setExecuted();
+            std::stringstream ss;
+            ss <<std::hex <<inst->pcState().instAddr();
+            cpu->ctrace->DurationTraceEnd(inst->threadNumber, 3,
+                (inst->staticInst->getName()+" 0x"+ss.str()).c_str(),
+                curTick(), 0);
+
+            cpu->ctrace->DurationTraceBegin(inst->threadNumber, 4,
+                (inst->staticInst->getName()+" 0x"+ss.str()).c_str(),
+                curTick(), 0);
 
             instToCommit(inst);
         }
@@ -1347,6 +1394,7 @@ IEW::writebackInsts()
     // mark scoreboard that this instruction is finally complete.
     // Either have IEW have direct access to scoreboard, or have this
     // as part of backwards communication.
+    std::stringstream ss;
     for (int inst_num = 0; inst_num < wbWidth &&
              toCommit->insts[inst_num]; inst_num++) {
         DynInstPtr inst = toCommit->insts[inst_num];
@@ -1354,6 +1402,15 @@ IEW::writebackInsts()
 
         DPRINTF(IEW, "Sending instructions to commit, [sn:%lli] PC %s.\n",
                 inst->seqNum, inst->pcState());
+        ss.str("");
+        ss <<std::hex <<inst->pcState().instAddr();
+        cpu->ctrace->DurationTraceEnd(inst->threadNumber, 3,
+            (inst->staticInst->getName()+" 0x"+ss.str()).c_str(),
+            curTick(), 0);
+
+        cpu->ctrace->DurationTraceBegin(inst->threadNumber, 4,
+            (inst->staticInst->getName()+" 0x"+ss.str()).c_str(),
+            curTick(), 0);
 
         iewStats.instsToCommit[tid]++;
         // Notify potential listeners that execution is complete for this
